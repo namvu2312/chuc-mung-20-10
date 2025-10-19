@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12A3's Story: A Special Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111;
+        }
+        .phone-frame {
+            width: 100%;
+            height: 100%;
+            max-width: 450px;
+            max-height: 850px;
+            background: #000;
+            border-radius: 40px;
+            border: 10px solid #111;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            pointer-events: none;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .post, .message-bubble {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .post.visible, .message-bubble.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .story-progress-bar {
+            width: 0%;
+            height: 3px;
+            background: white;
+            transition: width 3s linear;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="phone-frame">
+
+        <div id="start-screen" class="screen active flex items-center justify-center">
+            <button id="startButton" class="px-6 py-3 text-lg font-bold text-black bg-white rounded-full">▶ Mở Feed Đặc Biệt</button>
+        </div>
+
+        <div id="login-screen" class="screen flex flex-col items-center justify-center p-8">
+            <h1 class="text-4xl font-bold text-white mb-12">12A3gram</h1>
+            <div class="w-full">
+                <input id="username-input" class="w-full p-3 mb-4 bg-gray-800 border border-gray-700 rounded-lg text-white" value="">
+                <input class="w-full p-3 mb-8 bg-gray-800 border border-gray-700 rounded-lg text-white" type="password" value="**********">
+                <div id="login-button" class="w-full p-3 text-center bg-blue-500 rounded-lg font-bold text-white opacity-50">Log In</div>
+            </div>
+        </div>
+
+        <div id="feed-screen" class="screen overflow-y-auto">
+            <header class="sticky top-0 bg-black/80 backdrop-blur-sm p-4 border-b border-gray-800 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white">12A3_Memories ✨</h1>
+                <div id="story-icon" class="w-10 h-10 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 rounded-full p-0.5 cursor-pointer">
+                    <div class="bg-black rounded-full w-full h-full p-0.5"><img src="https://i.imgur.com/KIXo4gB.png" class="rounded-full"></div>
+                </div>
+            </header>
+            <main id="feed-container" class="p-2 space-y-4"></main>
+        </div>
+
+        <div id="story-screen" class="screen">
+            <div id="story-progress-container" class="absolute top-0 left-0 w-full p-2 space-x-1 flex"></div>
+            <img id="story-image" src="" class="w-full h-full object-cover">
+        </div>
+        
+        <div id="chat-screen" class="screen flex flex-col">
+            <header class="bg-gray-900 p-4 border-b border-gray-800 text-center">
+                <h2 class="font-bold text-white">💖 Gửi một nửa 12A3 💖</h2>
+            </header>
+            <main id="chat-container" class="flex-1 p-4 space-y-3 overflow-y-auto"></main>
+        </div>
+
+    </div>
+
+    <audio id="music-lofi" loop src="https://cdn.pixabay.com/audio/2022/05/27/audio_180aad9b9a.mp3"></audio>
+    <audio id="music-pop" loop src="https://cdn.pixabay.com/audio/2023/11/23/audio_852a13437c.mp3"></audio>
+    <audio id="music-emotional" loop src="https://cdn.pixabay.com/audio/2024/05/09/audio_69e7186641.mp3"></audio>
+    <audio id="sfx-whoosh" src="https://cdn.pixabay.com/audio/2022/03/15/audio_747e099a80.mp3"></audio>
+    <audio id="sfx-like" src="https://cdn.pixabay.com/audio/2021/08/04/audio_a1329c3b93.mp3"></audio>
+    <audio id="sfx-notification" src="https://cdn.pixabay.com/audio/2022/11/07/audio_a730999a46.mp3"></audio>
+    
+    <script>
+        // --- DATA ĐỂ CHỈNH SỬA ---
+        const girlsData = [
+            { name: "Yến Nhy", image: "", caption: "Spotlight on @YenNhy - Nguồn năng lượng và nụ cười của lớp." },
+            { name: "Hồng Phúc", image: "", caption: "Always shining bright ✨ Cảm ơn @HongPhuc nhé!" },
+            { name: "Thảo", image: "", caption: "Gửi đến @Thao, người luôn truyền cảm hứng cho cả lớp." },
+            // ... Thêm các bạn nữ khác vào đây
+        ];
+
+        const storyImages = [
+            // Thêm link các ảnh story vào đây
+            // Ví dụ: "https://i.imgur.com/example1.jpg", "https://i.imgur.com/example2.jpg"
+        ];
+        
+        // DOM Elements
+        const screens = document.querySelectorAll('.screen');
+        const startButton = document.getElementById('startButton');
+        const usernameInput = document.getElementById('username-input');
+        const loginButton = document.getElementById('login-button');
+        const feedContainer = document.getElementById('feed-container');
+        const storyIcon = document.getElementById('story-icon');
+        const storyImage = document.getElementById('story-image');
+        const storyProgressContainer = document.getElementById('story-progress-container');
+        const chatContainer = document.getElementById('chat-container');
+
+        const music = {
+            lofi: document.getElementById('music-lofi'),
+            pop: document.getElementById('music-pop'),
+            emotional: document.getElementById('music-emotional'),
+        };
+        const sfx = {
+            whoosh: document.getElementById('sfx-whoosh'),
+            like: document.getElementById('sfx-like'),
+            notification: document.getElementById('sfx-notification'),
+        };
+
+        // --- CORE FUNCTIONS ---
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        function switchScreen(activeScreenId) {
+            screens.forEach(s => s.classList.remove('active'));
+            document.getElementById(activeScreenId).classList.add('active');
+        }
+
+        async function fadeMusic(track, targetVolume, duration = 1000) {
+            const startVolume = track.volume;
+            const steps = 20;
+            for (let i = 0; i < steps; i++) {
+                track.volume = startVolume + (targetVolume - startVolume) * (i / steps);
+                await sleep(duration / steps);
+            }
+            track.volume = targetVolume;
+            if (targetVolume === 0) track.pause();
+        }
+
+        async function playMusic(track, volume = 0.5) {
+            track.volume = 0;
+            await track.play().catch(e => {});
+            await fadeMusic(track, volume);
+        }
+
+        // --- SCRIPT SEQUENCE ---
+
+        async function runPart1_Login() {
+            switchScreen('login-screen');
+            playMusic(music.lofi, 0.4);
+            
+            const username = "TheBoys_12A3";
+            for(let i=0; i < username.length; i++) {
+                usernameInput.value += username[i];
+                await sleep(100);
+            }
+            
+            loginButton.classList.remove('opacity-50');
+            await sleep(1000);
+            sfx.whoosh.play();
+        }
+
+        async function runPart2_Feed() {
+            switchScreen('feed-screen');
+            for (const girl of girlsData) {
+                const post = document.createElement('div');
+                post.className = 'post bg-black border border-gray-800 rounded-lg';
+                post.innerHTML = `
+                    <div class="p-3 flex items-center space-x-3">
+                        <img src="https://i.imgur.com/KIXo4gB.png" class="w-8 h-8 rounded-full">
+                        <span class="font-bold text-white">12A3_Memories</span>
+                    </div>
+                    <img src="${girl.image || 'https://via.placeholder.com/450x450?text=12A3'}" class="w-full">
+                    <div class="p-3">
+                        <p class="text-white">${girl.caption}</p>
+                        <p class="text-xs text-gray-500 mt-2">Liked by <b>TheBoys_12A3</b> and <b>40 others</b></p>
+                    </div>
+                `;
+                feedContainer.appendChild(post);
+                await sleep(200);
+                post.classList.add('visible');
+                await sleep(500);
+                sfx.like.play();
+                await sleep(2000); // Time per post
+            }
+        }
+
+        async function runPart3_Story() {
+            fadeMusic(music.lofi, 0);
+            playMusic(music.pop, 0.5);
+
+            switchScreen('story-screen');
+            if (storyImages.length === 0) storyImages.push('https://via.placeholder.com/450x850?text=Best+Moments');
+
+            for (let i=0; i < storyImages.length; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'flex-1 h-full bg-gray-600 rounded-full overflow-hidden';
+                bar.innerHTML = `<div id="progress-bar-${i}" class="story-progress-bar"></div>`;
+                storyProgressContainer.appendChild(bar);
+            }
+
+            for (let i=0; i < storyImages.length; i++) {
+                storyImage.src = storyImages[i];
+                await sleep(100);
+                document.getElementById(`progress-bar-${i}`).style.width = '100%';
+                await sleep(3000);
+            }
+        }
+        
+        async function runPart4_Notification() {
+            sfx.notification.play();
+            const notification = document.createElement('div');
+            notification.className = 'absolute top-0 left-0 w-full p-4 transform -translate-y-full transition-transform duration-500';
+            notification.innerHTML = `
+                <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl p-3 text-white">
+                    <p class="font-bold">💖 Gửi một nửa 12A3 💖</p>
+                    <p>TheBoys_12A3: Bạn có một tin nhắn mới!</p>
+                </div>
+            `;
+            document.querySelector('.phone-frame').appendChild(notification);
+            await sleep(100);
+            notification.style.transform = 'translateY(20px)';
+            await sleep(4000);
+            notification.style.transform = 'translateY(-120%)';
+        }
+
+        async function runPart5_Chat() {
+            fadeMusic(music.pop, 0);
+            playMusic(music.emotional, 0.6);
+            switchScreen('chat-screen');
+
+            const messages = [
+                { from: 'them', text: 'Happy 20/10 nhé các bà! 🥳' },
+                { from: 'them', text: 'Cảm ơn vì đã luôn là những bông hoa xinh đẹp nhất của 12A3.' },
+                { from: 'me', text: 'Thay mặt toàn thể anh em, chúc một nửa thế giới của 12A3 luôn rạng rỡ, hạnh phúc và nhận được thật nhiều quà nhé! 💖' }
+            ];
+
+            for (const msg of messages) {
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble max-w-xs p-3 rounded-2xl ${msg.from === 'me' ? 'bg-blue-500 text-white self-end' : 'bg-gray-700 text-white self-start'}`;
+                bubble.innerText = msg.text;
+                chatContainer.appendChild(bubble);
+                await sleep(200);
+                bubble.classList.add('visible');
+                await sleep(2000);
+            }
+        }
+
+        // --- MAIN SEQUENCE ---
+        async function runSequence() {
+            await runPart1_Login();
+            await runPart2_Feed();
+            storyIcon.addEventListener('click', async () => {
+                await runPart3_Story();
+                await runPart4_Notification();
+                await runPart5_Chat();
+            }, { once: true });
+        }
+
+        startButton.addEventListener('click', () => {
+             Object.values(sfx).concat(Object.values(music)).forEach(a => { a.muted=false; a.play().then(()=>a.pause()).catch(()=>{}) });
+             runSequence();
+        }, { once: true });
+    </script>
+</body>
+</html>
